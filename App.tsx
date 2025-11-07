@@ -149,23 +149,36 @@ export default function App() {
     
     // Check email domain restriction
     const allowedDomain = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN;
-    if (!email.endsWith(`@${allowedDomain}`)) {
+    if (allowedDomain && !email.endsWith(`@${allowedDomain}`)) {
       await supabase.auth.signOut();
       toast.error(`Only @${allowedDomain} emails are allowed`);
       setUser(null);
       return;
     }
 
+    // Create base user data (always set this, even if database queries fail)
+    const baseUserData: User = {
+      id: authUser.id,
+      name: authUser.user_metadata?.full_name || email.split('@')[0],
+      email: email,
+      role: 'student',
+      enrolledClasses: [],
+      completedChallenges: []
+    };
+
     try {
-      // Check if user exists in database
-      const { data: existingUser } = await supabase
+      // Try to check if user exists in database
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
-      if (!existingUser) {
-        // Create new user in database
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.warn('Error fetching user from database:', fetchError);
+        // Continue with base user data - database might not be set up yet
+      } else if (!existingUser) {
+        // Create new user in database (non-blocking)
         const { error: insertError } = await supabase.from('users').insert({
           id: authUser.id,
           email: email,
@@ -174,48 +187,45 @@ export default function App() {
         });
         
         if (insertError) {
-          console.error('Error creating user:', insertError);
+          console.warn('Error creating user in database (non-critical):', insertError);
+          // Continue anyway - user can still use the app
         }
       }
 
-      // Fetch user's completed challenges from database
-      const { data: submissions } = await supabase
+      // Try to fetch user's completed challenges from database (non-blocking)
+      const { data: submissions, error: submissionsError } = await supabase
         .from('user_challenge_submissions')
         .select('challenge_id, score, submitted_at')
         .eq('user_id', authUser.id);
 
-      // Convert submissions to match User type
-      const completedChallenges = (submissions || []).map((sub: any) => ({
-        challengeId: sub.challenge_id,
-        score: sub.score,
-        date: sub.submitted_at
-      }));
-
-      // Set user state
-      const userData: User = {
-        id: authUser.id,
-        name: authUser.user_metadata?.full_name || email.split('@')[0],
-        email: email,
-        role: 'student',
-        enrolledClasses: [], // TODO: Fetch from database later
-        completedChallenges: completedChallenges
-      };
-
-      setUser(userData);
-      localStorage.setItem('virtualLabUser', JSON.stringify(userData));
-      
-      console.log('User authenticated:', userData.email);
-      
-      // Navigate to dashboard after successful authentication
-      // Only redirect if on auth page (not home - user can visit home while logged in)
-      const currentPath = window.location.pathname;
-      if (currentPath === '/auth') {
-        // Use window.location for immediate redirect
-        window.location.href = '/dashboard';
+      if (submissionsError) {
+        console.warn('Error fetching submissions (non-critical):', submissionsError);
+        // Continue with empty completedChallenges
+      } else if (submissions && submissions.length > 0) {
+        // Convert submissions to match User type
+        baseUserData.completedChallenges = submissions.map((sub: any) => ({
+          challengeId: sub.challenge_id,
+          score: sub.score,
+          date: sub.submitted_at
+        }));
       }
     } catch (error) {
-      console.error('Error handling auth user:', error);
-      toast.error('Error setting up user session');
+      console.error('Error during database operations (non-critical):', error);
+      // Continue with base user data - app can work without database
+    }
+
+    // Always set user state (even if database operations failed)
+    setUser(baseUserData);
+    localStorage.setItem('virtualLabUser', JSON.stringify(baseUserData));
+    
+    console.log('User authenticated:', baseUserData.email);
+    
+    // Navigate to dashboard after successful authentication
+    // Only redirect if on auth page (not home - user can visit home while logged in)
+    const currentPath = window.location.pathname;
+    if (currentPath === '/auth') {
+      // Use window.location for immediate redirect
+      window.location.href = '/dashboard';
     }
   };
 
