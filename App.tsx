@@ -27,21 +27,9 @@ export type AuthContextType = {
   saveCompletedChallenge: (challengeId: string, score: number, totalPoints: number) => void;
 };
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('virtualLabUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-  
-  if (!user) {
+function ProtectedRoute({ children, authContext }: { children: React.ReactNode; authContext: AuthContextType }) {
+  // Simply check authContext - navigation is handled by AppRoutes and route definitions
+  if (!authContext.user) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -51,18 +39,41 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes({ authContext }: { authContext: AuthContextType }) {
   const navigate = useNavigate();
 
-  // Handle OAuth redirect and URL cleanup
+  // Handle OAuth redirect and navigation after login
   useEffect(() => {
     // Check for OAuth tokens in hash
-    if (window.location.hash.includes('access_token')) {
+    const hasAccessToken = window.location.hash.includes('access_token');
+    const currentPath = window.location.pathname;
+    
+    if (hasAccessToken) {
       // Clean up hash immediately (Supabase has already processed it)
-      const cleanUrl = window.location.pathname + window.location.search;
+      const cleanUrl = currentPath + window.location.search;
       window.history.replaceState(null, '', cleanUrl);
-      
-      // Navigate to dashboard if we're on root and have a user
-      if (window.location.pathname === '/' && authContext.user) {
+    }
+    
+    // Navigate to dashboard if user is authenticated
+    if (authContext.user) {
+      // If on auth page, redirect to dashboard
+      if (currentPath === '/auth') {
         navigate('/dashboard', { replace: true });
       }
+      // If on root with OAuth token (just completed login), redirect to dashboard
+      else if (currentPath === '/' && hasAccessToken) {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+    // If no user but we have access token, wait a bit for auth state to update
+    else if (hasAccessToken) {
+      // Wait for user state to update (handled by onAuthStateChange)
+      const timeout = setTimeout(() => {
+        // Fallback: check again after delay
+        const savedUser = localStorage.getItem('virtualLabUser');
+        if (savedUser) {
+          navigate('/dashboard', { replace: true });
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
     }
   }, [authContext.user, navigate]);
 
@@ -83,14 +94,20 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
         <Route path="/" element={<HomePage authContext={enhancedAuthContext} />} />
         <Route 
           path="/auth" 
-          element={authContext.user ? <Navigate to="/dashboard" replace /> : <AuthPage authContext={enhancedAuthContext} />} 
+          element={
+            authContext.user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <AuthPage authContext={enhancedAuthContext} />
+            )
+          } 
         />
         
         {/* Protected Routes */}
         <Route
           path="/challenges"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authContext={enhancedAuthContext}>
               <ChallengePage authContext={enhancedAuthContext} />
             </ProtectedRoute>
           }
@@ -98,7 +115,7 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
         <Route
           path="/exercise/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authContext={enhancedAuthContext}>
               <ExerciseDetailPage authContext={enhancedAuthContext} />
             </ProtectedRoute>
           }
@@ -106,7 +123,7 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authContext={enhancedAuthContext}>
               <DashboardPage authContext={enhancedAuthContext} />
             </ProtectedRoute>
           }
@@ -151,18 +168,19 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', event, session?.user?.email);
       
       if (session?.user) {
         await handleAuthUser(session.user);
         
         // Clean up URL hash after successful authentication
-        // Use setTimeout to ensure Supabase has finished processing
         if (hasAccessToken || window.location.hash.includes('access_token')) {
           setTimeout(() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
           }, 100);
         }
+        
+        // If we just signed in via OAuth, the user state will update and AppRoutes will handle navigation
       } else {
         setUser(null);
         localStorage.removeItem('virtualLabUser');
@@ -193,48 +211,59 @@ export default function App() {
       return;
     }
 
-    // Check if user exists in database
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
+    try {
+      // Check if user exists in database
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
 
-    if (!existingUser) {
-      // Create new user in database
-      await supabase.from('users').insert({
+      if (!existingUser) {
+        // Create new user in database
+        const { error: insertError } = await supabase.from('users').insert({
+          id: authUser.id,
+          email: email,
+          name: authUser.user_metadata?.full_name || email.split('@')[0],
+          role: 'student'
+        });
+        
+        if (insertError) {
+          console.error('Error creating user:', insertError);
+        }
+      }
+
+      // Fetch user's completed challenges from database
+      const { data: submissions } = await supabase
+        .from('user_challenge_submissions')
+        .select('challenge_id, score, submitted_at')
+        .eq('user_id', authUser.id);
+
+      // Convert submissions to match User type
+      const completedChallenges = (submissions || []).map((sub: any) => ({
+        challengeId: sub.challenge_id,
+        score: sub.score,
+        date: sub.submitted_at
+      }));
+
+      // Set user state
+      const userData: User = {
         id: authUser.id,
-        email: email,
         name: authUser.user_metadata?.full_name || email.split('@')[0],
-        role: 'student'
-      });
+        email: email,
+        role: 'student',
+        enrolledClasses: [], // TODO: Fetch from database later
+        completedChallenges: completedChallenges
+      };
+
+      setUser(userData);
+      localStorage.setItem('virtualLabUser', JSON.stringify(userData));
+      
+      console.log('User authenticated:', userData.email);
+    } catch (error) {
+      console.error('Error handling auth user:', error);
+      toast.error('Error setting up user session');
     }
-
-    // Fetch user's completed challenges from database
-    const { data: submissions } = await supabase
-      .from('user_challenge_submissions')
-      .select('challenge_id, score, submitted_at')
-      .eq('user_id', authUser.id);
-
-    // Convert submissions to match User type
-    const completedChallenges = (submissions || []).map((sub: any) => ({
-      challengeId: sub.challenge_id,
-      score: sub.score,
-      date: sub.submitted_at
-    }));
-
-    // Set user state
-    const userData: User = {
-      id: authUser.id,
-      name: authUser.user_metadata?.full_name || email.split('@')[0],
-      email: email,
-      role: 'student',
-      enrolledClasses: [], // TODO: Fetch from database later
-      completedChallenges: completedChallenges
-    };
-
-    setUser(userData);
-    localStorage.setItem('virtualLabUser', JSON.stringify(userData));
   };
 
   const handleSplashComplete = () => {
