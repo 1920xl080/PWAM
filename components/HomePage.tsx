@@ -58,7 +58,7 @@ export function HomePage({ authContext }: HomePageProps) {
                 transition={{ duration: 0.8, delay: 0.5 }}
               >
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link to="/challenges">
+                  <Link to={authContext.user ? "/challenges" : "/auth"}>
                     <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
                       Start Practicing
                       <ArrowRight className="ml-2 w-5 h-5" />
