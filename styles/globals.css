@@ -199,3 +199,18 @@ html, body {
 * {
   box-sizing: border-box;
 }
+
+/* Ensure buttons maintain their styles and interactivity */
+/* Override global reset for Button components to ensure proper styling */
+button[data-slot="button"] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent;
+  /* Ensure button styles are not reset */
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Ensure button colors are applied correctly */
+button[data-slot="button"]:not([class*="bg-transparent"]):not([class*="bg-white"]):not([class*="bg-gray"]) {
+  /* Let Tailwind classes handle colors, but ensure they're not transparent */
+}
