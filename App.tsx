@@ -27,53 +27,19 @@ export type AuthContextType = {
   saveCompletedChallenge: (challengeId: string, score: number, totalPoints: number) => void;
 };
 
-function ProtectedRoute({ children, authContext }: { children: React.ReactNode; authContext: AuthContextType }) {
-  // Simply check authContext - navigation is handled by AppRoutes and route definitions
-  if (!authContext.user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return <>{children}</>;
-}
+// Removed ProtectedRoute - no longer needed
 
 function AppRoutes({ authContext }: { authContext: AuthContextType }) {
   const navigate = useNavigate();
 
-  // Handle OAuth redirect and navigation after login
+  // Redirect to dashboard immediately after login
   useEffect(() => {
-    // Check for OAuth tokens in hash
-    const hasAccessToken = window.location.hash.includes('access_token');
-    const currentPath = window.location.pathname;
-    
-    if (hasAccessToken) {
-      // Clean up hash immediately (Supabase has already processed it)
-      const cleanUrl = currentPath + window.location.search;
-      window.history.replaceState(null, '', cleanUrl);
-    }
-    
-    // Navigate to dashboard if user is authenticated
     if (authContext.user) {
-      // If on auth page, redirect to dashboard
-      if (currentPath === '/auth') {
+      const currentPath = window.location.pathname;
+      // If user is logged in and on auth page or root, go to dashboard
+      if (currentPath === '/auth' || currentPath === '/') {
         navigate('/dashboard', { replace: true });
       }
-      // If on root with OAuth token (just completed login), redirect to dashboard
-      else if (currentPath === '/' && hasAccessToken) {
-        navigate('/dashboard', { replace: true });
-      }
-    }
-    // If no user but we have access token, wait a bit for auth state to update
-    else if (hasAccessToken) {
-      // Wait for user state to update (handled by onAuthStateChange)
-      const timeout = setTimeout(() => {
-        // Fallback: check again after delay
-        const savedUser = localStorage.getItem('virtualLabUser');
-        if (savedUser) {
-          navigate('/dashboard', { replace: true });
-        }
-      }, 1000);
-      
-      return () => clearTimeout(timeout);
     }
   }, [authContext.user, navigate]);
 
@@ -103,30 +69,18 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
           } 
         />
         
-        {/* Protected Routes */}
+        {/* Routes - no protection, just redirect after login */}
         <Route
           path="/challenges"
-          element={
-            <ProtectedRoute authContext={enhancedAuthContext}>
-              <ChallengePage authContext={enhancedAuthContext} />
-            </ProtectedRoute>
-          }
+          element={<ChallengePage authContext={enhancedAuthContext} />}
         />
         <Route
           path="/exercise/:id"
-          element={
-            <ProtectedRoute authContext={enhancedAuthContext}>
-              <ExerciseDetailPage authContext={enhancedAuthContext} />
-            </ProtectedRoute>
-          }
+          element={<ExerciseDetailPage authContext={enhancedAuthContext} />}
         />
         <Route
           path="/dashboard"
-          element={
-            <ProtectedRoute authContext={enhancedAuthContext}>
-              <DashboardPage authContext={enhancedAuthContext} />
-            </ProtectedRoute>
-          }
+          element={<DashboardPage authContext={enhancedAuthContext} />}
         />
       </Routes>
       <Toaster />
@@ -153,47 +107,39 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Check for OAuth callback - Supabase automatically processes hash tokens
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hasAccessToken = hashParams.get('access_token');
-    
-    // Check for existing Supabase session (this also processes OAuth hash tokens automatically)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleAuthUser(session.user);
-      }
-    });
-
-    // Listen for auth state changes (fires when OAuth tokens are processed)
+    // Listen for auth state changes FIRST (this handles OAuth callbacks automatically)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+      console.log('Auth state changed:', event, session?.user?.email || 'no user');
       
       if (session?.user) {
+        console.log('✅ User authenticated:', session.user.email);
         await handleAuthUser(session.user);
-        
-        // Clean up URL hash after successful authentication
-        if (hasAccessToken || window.location.hash.includes('access_token')) {
-          setTimeout(() => {
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          }, 100);
-        }
-        
-        // If we just signed in via OAuth, the user state will update and AppRoutes will handle navigation
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         localStorage.removeItem('virtualLabUser');
       }
     });
 
-    // Also clean up hash after a short delay (fallback)
-    if (hasAccessToken) {
+    // Check for existing session (this also processes OAuth hash tokens automatically)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        console.log('✅ Existing session found:', session.user.email);
+        handleAuthUser(session.user);
+      } else {
+        console.log('ℹ️ No existing session');
+      }
+    });
+
+    // Clean up URL hash after a short delay (Supabase processes it first)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('access_token')) {
       setTimeout(() => {
         if (window.location.hash.includes('access_token')) {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
-      }, 500);
+      }, 1000);
     }
 
     return () => subscription.unsubscribe();
@@ -260,6 +206,14 @@ export default function App() {
       localStorage.setItem('virtualLabUser', JSON.stringify(userData));
       
       console.log('User authenticated:', userData.email);
+      
+      // Navigate to dashboard after successful authentication
+      // Check if we're currently on auth page or root
+      const currentPath = window.location.pathname;
+      if (currentPath === '/auth' || currentPath === '/') {
+        // Use window.location for immediate redirect
+        window.location.href = '/dashboard';
+      }
     } catch (error) {
       console.error('Error handling auth user:', error);
       toast.error('Error setting up user session');
