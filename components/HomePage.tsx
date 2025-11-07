@@ -147,7 +147,7 @@ export function HomePage({ authContext }: HomePageProps) {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
-                Our platform combines Bebras-style challenges with real classroom integration, allowing students to practice problem-solving, algorithm design, pattern recognition, and logical thinking in an engaging environment.
+                Our platform combines Computational Thinking-style challenges with real classroom integration, allowing students to practice problem-solving, algorithm design, pattern recognition, and logical thinking in an engaging environment.
               </motion.p>
             </motion.div>
           </div>
