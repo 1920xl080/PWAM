@@ -63,18 +63,6 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
             )
           } 
         />
-        {/* OAuth callback route - handles redirect from Google */}
-        <Route 
-          path="/auth/callback" 
-          element={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Completing authentication...</p>
-              </div>
-            </div>
-          } 
-        />
         
         {/* Routes - no protection, just redirect after login */}
         <Route
@@ -116,34 +104,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Handle OAuth callback - check for hash fragments first
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const errorParam = hashParams.get('error');
-    
-    if (errorParam) {
-      console.error('OAuth error:', errorParam);
-      toast.error('Authentication failed. Please try again.');
-      // Clean up URL
-      window.history.replaceState(null, '', '/auth');
-      return;
-    }
-
-    // Listen for auth state changes (this handles OAuth callbacks automatically)
+    // Listen for auth state changes FIRST (this handles OAuth callbacks automatically)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email || 'no user');
       
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (session?.user) {
         console.log('✅ User authenticated:', session.user.email);
         await handleAuthUser(session.user);
-        
-        // If we're on the callback route, redirect to dashboard
-        if (window.location.pathname === '/auth/callback' || window.location.pathname.includes('/auth/callback')) {
-          // Clean up URL hash and redirect
-          window.history.replaceState(null, '', '/dashboard');
-        }
       } else if (event === 'SIGNED_OUT') {
         console.log('✅ User signed out via Supabase');
         // Clear state (logout function handles the rest)
@@ -153,12 +122,7 @@ export default function App() {
     });
 
     // Check for existing session (this also processes OAuth hash tokens automatically)
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Error getting session:', error);
-        return;
-      }
-      
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         console.log('✅ Existing session found:', session.user.email);
         handleAuthUser(session.user);
@@ -167,17 +131,14 @@ export default function App() {
       }
     });
 
-    // Clean up URL hash after processing OAuth callback
-    if (accessToken) {
+    // Clean up URL hash after a short delay (Supabase processes it first)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('access_token')) {
       setTimeout(() => {
-        // Supabase has processed the token, clean up the URL
-        const currentPath = window.location.pathname;
-        if (currentPath === '/auth/callback' || currentPath.includes('/auth/callback')) {
-          window.history.replaceState(null, '', '/dashboard');
-        } else {
-          window.history.replaceState(null, '', currentPath);
+        if (window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
-      }, 1500);
+      }, 1000);
     }
 
     return () => subscription.unsubscribe();
@@ -246,14 +207,11 @@ export default function App() {
       console.log('User authenticated:', userData.email);
       
       // Navigate to dashboard after successful authentication
-      // Redirect from auth page or callback to dashboard
+      // Only redirect if on auth page (not home - user can visit home while logged in)
       const currentPath = window.location.pathname;
-      if (currentPath === '/auth' || currentPath === '/auth/callback' || currentPath.includes('/auth/callback')) {
-        // Use navigate for client-side routing (cleaner than window.location)
-        // Small delay to ensure state is set
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 100);
+      if (currentPath === '/auth') {
+        // Use window.location for immediate redirect
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('Error handling auth user:', error);
@@ -268,13 +226,11 @@ export default function App() {
 
   const loginWithGoogle = async (): Promise<boolean> => {
     try {
-      // Use current origin (works for both local and production)
-      // This ensures OAuth redirects back to the same domain you're testing on
-      const redirectUrl = window.location.origin;
-      const redirectTo = `${redirectUrl}/auth/callback`;
+      // Always redirect to production Vercel URL (not localhost)
+      const redirectUrl = import.meta.env.VITE_PRODUCTION_URL || 'https://logiclabberkom.vercel.app';
+      const redirectTo = `${redirectUrl}/dashboard`;
       
       console.log('OAuth redirect to:', redirectTo);
-      console.log('Current origin:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -295,7 +251,7 @@ export default function App() {
       }
 
       // OAuth redirect happens automatically
-      // User will be redirected to Google, then back to /auth/callback
+      // User will be redirected to Google, then back to /dashboard
       return true;
 
     } catch (error) {
