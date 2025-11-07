@@ -1,13 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Mail, GraduationCap } from 'lucide-react';
+import { ArrowRight, BookOpen, Mail, GraduationCap, MapPin, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
 import { Navigation } from './Navigation';
 import { AuthContextType } from '../App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 
@@ -18,10 +15,6 @@ type HomePageProps = {
 export function HomePage({ authContext }: HomePageProps) {
   const { user } = authContext;
 
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success('Message sent! We will get back to you soon.');
-  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -1016,9 +1009,9 @@ export function HomePage({ authContext }: HomePageProps) {
         </div>
       </section>
 
-      {/* Help & Contact Section */}
+      {/* Contact Information Section */}
       <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <motion.div 
             className="text-center mb-12"
             initial={{ opacity: 0, y: 30 }}
@@ -1028,37 +1021,101 @@ export function HomePage({ authContext }: HomePageProps) {
           >
             <div className="flex items-center justify-center gap-3 mb-4">
               <Mail className="w-8 h-8 text-blue-600" />
-              <h2 className="text-3xl md:text-4xl text-gray-900">Send us a message</h2>
+              <h2 className="text-3xl md:text-4xl text-gray-900">Get in Touch</h2>
             </div>
             <p className="text-lg text-gray-600">
-              Have questions or need help? We're here to assist you.
+              Have questions or need help? Reach out to us through the following channels.
             </p>
           </motion.div>
 
-          {/* Contact Form */}
+          {/* Contact Information Cards */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-white border border-gray-200 rounded-lg p-6 shadow-lg text-center"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="bg-blue-100 rounded-full p-3">
+                  <Mail className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
+              <p className="text-gray-600 text-sm mb-2">For general inquiries</p>
+              <a 
+                href="mailto:virtuallab@itb.ac.id" 
+                className="text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                virtuallab@itb.ac.id
+              </a>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white border border-gray-200 rounded-lg p-6 shadow-lg text-center"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="bg-green-100 rounded-full p-3">
+                  <MapPin className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Location</h3>
+              <p className="text-gray-600 text-sm mb-2">Visit us at</p>
+              <p className="text-gray-700">
+                Institut Teknologi Bandung<br />
+                Jl. Ganesha No. 10<br />
+                Bandung 40132, Indonesia
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-white border border-gray-200 rounded-lg p-6 shadow-lg text-center"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="bg-purple-100 rounded-full p-3">
+                  <Clock className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Office Hours</h3>
+              <p className="text-gray-600 text-sm mb-2">Available during</p>
+              <p className="text-gray-700">
+                Monday - Friday<br />
+                08:00 - 17:00 WIB<br />
+                <span className="text-sm text-gray-500">(Closed on weekends)</span>
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Additional Help Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6 text-center"
           >
-            <form onSubmit={handleContactSubmit} className="bg-white border border-gray-200 rounded-lg p-8 space-y-6 shadow-lg">
-              <div>
-                <label className="text-sm text-gray-700 mb-2 block">Name</label>
-                <Input placeholder="Your name" required />
-              </div>
-              <div>
-                <label className="text-sm text-gray-700 mb-2 block">Email</label>
-                <Input type="email" placeholder="your.email@itb.ac.id" required />
-              </div>
-              <div>
-                <label className="text-sm text-gray-700 mb-2 block">Message</label>
-                <Textarea placeholder="How can we help you?" rows={5} required />
-              </div>
-              <Button type="submit" className="w-full" size="lg">
-                Send Message
-              </Button>
-            </form>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Need Immediate Help?</h3>
+            <p className="text-gray-600 mb-4">
+              For technical support or urgent matters, please contact your course instructor or visit the ITB help desk.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
+              <a href="https://www.itb.ac.id" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline">
+                ITB Official Website
+              </a>
+              <span className="text-gray-300">|</span>
+              <a href="https://akademik.itb.ac.id" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 hover:underline">
+                Academic Portal
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
