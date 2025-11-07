@@ -32,26 +32,20 @@ export type AuthContextType = {
 function AppRoutes({ authContext }: { authContext: AuthContextType }) {
   const navigate = useNavigate();
 
-  // Redirect to dashboard immediately after login
+  // Redirect to dashboard only when on auth page after login
   useEffect(() => {
     if (authContext.user) {
       const currentPath = window.location.pathname;
-      // If user is logged in and on auth page or root, go to dashboard
-      if (currentPath === '/auth' || currentPath === '/') {
+      // Only redirect if on auth page (not home page - user should be able to visit home)
+      if (currentPath === '/auth') {
         navigate('/dashboard', { replace: true });
       }
     }
   }, [authContext.user, navigate]);
 
-  // Create logout function with navigation
-  const logoutWithNavigate = async () => {
-    await authContext.logout();
-    navigate('/', { replace: true });
-  };
-
+  // Use authContext directly (logout now handles navigation internally)
   const enhancedAuthContext: AuthContextType = {
-    ...authContext,
-    logout: logoutWithNavigate
+    ...authContext
   };
 
   return (
@@ -208,9 +202,9 @@ export default function App() {
       console.log('User authenticated:', userData.email);
       
       // Navigate to dashboard after successful authentication
-      // Check if we're currently on auth page or root
+      // Only redirect if on auth page (not home - user can visit home while logged in)
       const currentPath = window.location.pathname;
-      if (currentPath === '/auth' || currentPath === '/') {
+      if (currentPath === '/auth') {
         // Use window.location for immediate redirect
         window.location.href = '/dashboard';
       }
@@ -263,11 +257,27 @@ export default function App() {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    localStorage.removeItem('virtualLabUser');
-    toast.success('Logged out successfully');
-    // Navigation will be handled by AppRoutes component
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        toast.error('Error logging out');
+        return;
+      }
+      
+      // Clear user state
+      setUser(null);
+      localStorage.removeItem('virtualLabUser');
+      
+      // Navigate to home page
+      window.location.href = '/';
+      
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Unexpected logout error:', error);
+      toast.error('Error logging out');
+    }
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {

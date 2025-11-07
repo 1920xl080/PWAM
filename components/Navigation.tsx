@@ -70,7 +70,17 @@ export function Navigation({ authContext }: NavigationProps) {
             {user ? (
               <>
                 <span className="text-sm text-gray-600">Hello, {user.name}</span>
-                <Button variant="outline" size="sm" onClick={logout}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    try {
+                      await logout();
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                    }
+                  }}
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
@@ -126,9 +136,13 @@ export function Navigation({ authContext }: NavigationProps) {
               })}
               {user ? (
                 <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
+                  onClick={async () => {
+                    try {
+                      setMobileMenuOpen(false);
+                      await logout();
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                    }
                   }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50"
                 >
