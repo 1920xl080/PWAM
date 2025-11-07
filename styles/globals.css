@@ -200,17 +200,86 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Ensure buttons maintain their styles and interactivity */
-/* Override global reset for Button components to ensure proper styling */
-button[data-slot="button"] {
-  cursor: pointer !important;
-  pointer-events: auto !important;
-  -webkit-tap-highlight-color: transparent;
-  /* Ensure button styles are not reset */
-  border-radius: calc(var(--radius) - 2px);
-}
-
-/* Ensure button colors are applied correctly */
-button[data-slot="button"]:not([class*="bg-transparent"]):not([class*="bg-white"]):not([class*="bg-gray"]) {
-  /* Let Tailwind classes handle colors, but ensure they're not transparent */
+@layer utilities {
+  /* Override global reset for Button components - must be in utilities layer for higher specificity */
+  button[data-slot="button"] {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Ensure button background colors are not overridden by global reset */
+  button[data-slot="button"].bg-primary {
+    background-color: var(--primary) !important;
+  }
+  
+  button[data-slot="button"].bg-secondary {
+    background-color: var(--secondary) !important;
+  }
+  
+  button[data-slot="button"].bg-destructive {
+    background-color: var(--destructive) !important;
+  }
+  
+  button[data-slot="button"].bg-background {
+    background-color: var(--background) !important;
+  }
+  
+  button[data-slot="button"].bg-white {
+    background-color: #ffffff !important;
+  }
+  
+  /* Ensure border styles for outline buttons */
+  button[data-slot="button"].border {
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: var(--border) !important;
+  }
+  
+  /* Ensure text colors are applied */
+  button[data-slot="button"].text-primary-foreground {
+    color: var(--primary-foreground) !important;
+  }
+  
+  button[data-slot="button"].text-secondary-foreground {
+    color: var(--secondary-foreground) !important;
+  }
+  
+  button[data-slot="button"].text-foreground {
+    color: var(--foreground) !important;
+  }
+  
+  button[data-slot="button"].text-white {
+    color: #ffffff !important;
+  }
+  
+  /* Ensure border radius is applied */
+  button[data-slot="button"].rounded-md {
+    border-radius: calc(var(--radius) - 2px) !important;
+  }
+  
+  button[data-slot="button"].rounded-lg {
+    border-radius: var(--radius) !important;
+  }
+  
+  /* Ensure hover states work - use attribute selector for classes with slashes */
+  button[data-slot="button"]:hover[class*="bg-primary/90"] {
+    background-color: color-mix(in oklab, var(--primary) 90%, transparent) !important;
+  }
+  
+  button[data-slot="button"]:hover[class*="bg-secondary/80"] {
+    background-color: color-mix(in oklab, var(--secondary) 80%, transparent) !important;
+  }
+  
+  button[data-slot="button"]:hover[class*="bg-destructive/90"] {
+    background-color: color-mix(in oklab, var(--destructive) 90%, transparent) !important;
+  }
+  
+  button[data-slot="button"]:hover.bg-accent {
+    background-color: var(--accent) !important;
+  }
+  
+  button[data-slot="button"]:hover.bg-gray-100 {
+    background-color: var(--color-gray-100) !important;
+  }
 }
