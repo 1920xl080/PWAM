@@ -13,9 +13,6 @@ type HomePageProps = {
 };
 
 export function HomePage({ authContext }: HomePageProps) {
-  const { user } = authContext;
-
-
   return (
     <div className="min-h-screen bg-white">
       <Navigation authContext={authContext} />

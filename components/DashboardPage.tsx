@@ -1,5 +1,3 @@
-import { supabase } from '../lib/supabase';
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Navigation } from './Navigation';
 import { AuthContextType } from '../App';
@@ -9,7 +7,7 @@ import { Progress } from './ui/progress';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { User, BookOpen, Trophy, Target, TrendingUp, CheckCircle2, ArrowRight } from 'lucide-react';
+import { BookOpen, Trophy, Target, TrendingUp, CheckCircle2, ArrowRight } from 'lucide-react';
 import { challenges } from '../data/mockData';
 import { motion } from 'framer-motion';
 
