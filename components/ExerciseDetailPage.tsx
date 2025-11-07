@@ -107,6 +107,7 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
       return;
     }
 
+    // Calculate score
     let totalScore = 0;
     challenge.questions.forEach(question => {
       const answer = answers.find(a => a.questionId === question.id);
@@ -118,6 +119,19 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
       }
     });
 
+    // CRITICAL: Save to database IMMEDIATELY when submit is pressed
+    // This happens BEFORE any UI updates or toasts to ensure instant save
+    let saveSuccessful = false;
+    try {
+      await authContext.saveCompletedChallenge(challenge.id, totalScore, challenge.totalPoints);
+      saveSuccessful = true;
+    } catch (error) {
+      // Error handling and toast are already done in saveCompletedChallenge
+      console.error('Error saving challenge (already handled):', error);
+      saveSuccessful = false;
+    }
+
+    // Update UI state after save attempt (regardless of success/failure)
     setScore(totalScore);
     setIsSubmitted(true);
     
@@ -125,32 +139,20 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
     const draftKey = `exercise-draft-${challenge.id}`;
     localStorage.removeItem(draftKey);
     
-    // Show score toast immediately (this appears first)
+    // Show score toast after save is complete
     const percentage = (totalScore / challenge.totalPoints) * 100;
     if (percentage === 100) {
       toast.success(`Perfect score! You got ${totalScore}/${challenge.totalPoints} points!`, {
-        duration: 2000
+        duration: 3000
       });
     } else if (percentage >= 70) {
       toast.success(`Great job! You scored ${totalScore}/${challenge.totalPoints} points!`, {
-        duration: 2000
+        duration: 3000
       });
     } else {
       toast.info(`You scored ${totalScore}/${challenge.totalPoints} points. Keep practicing!`, {
-        duration: 2000
+        duration: 3000
       });
-    }
-
-    // Save the completed challenge and wait for it to complete
-    // The saveCompletedChallenge function will show "Progress saved!" toast after saving
-    // This ensures user always sees confirmation that their progress was saved
-    try {
-      await authContext.saveCompletedChallenge(challenge.id, totalScore, challenge.totalPoints);
-      // If we get here, progress was saved successfully (toast already shown by saveCompletedChallenge)
-    } catch (error) {
-      // Error handling and toast are already done in saveCompletedChallenge
-      // We catch here just to prevent unhandled promise rejection
-      console.error('Error in handleSubmit while saving (already handled):', error);
     }
 
     // Scroll to top to see results

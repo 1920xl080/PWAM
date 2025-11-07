@@ -389,164 +389,18 @@ export default function App() {
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {
-    // First, verify we have a user
+    // Quick validation - fail fast if no user
     if (!user) {
       toast.error('You must be logged in to save progress');
       throw new Error('User not logged in');
     }
 
-    // Verify Supabase session is active and get the actual auth user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    let userId: string | null = null;
+    // Get session - but don't block on it, start saving immediately
+    // We'll handle session issues in the retry logic
+    const sessionPromise = supabase.auth.getSession();
     
-    if (sessionError || !session?.user) {
-      console.warn('No active Supabase session, will save to localStorage only:', sessionError);
-      // Use user ID from state (might still work if session is just expired)
-      userId = user.id;
-      
-      // Save to localStorage as backup immediately
-      const backupKey = `challenge_submission_backup_${challengeId}`;
-      localStorage.setItem(backupKey, JSON.stringify({
-        challengeId,
-        score,
-        totalPoints,
-        userId: user.id,
-        timestamp: new Date().toISOString()
-      }));
-      
-      // Update local state first
-      const existingIndex = user.completedChallenges?.findIndex(
-        c => c.challengeId === challengeId
-      ) ?? -1;
-      
-      const updatedCompletedChallenges = existingIndex >= 0
-        ? user.completedChallenges!.map((c, index) =>
-            index === existingIndex
-              ? { challengeId, score, date: new Date().toISOString() }
-              : c
-          )
-        : [
-            ...(user.completedChallenges || []),
-            { challengeId, score, date: new Date().toISOString() }
-          ];
-
-      const updatedUser = {
-        ...user,
-        completedChallenges: updatedCompletedChallenges
-      };
-
-      setUser(updatedUser);
-      localStorage.setItem('virtualLabUser', JSON.stringify(updatedUser));
-      
-      // Show info that it's saved locally (this counts as "progress saved" feedback)
-      toast.info('✅ Progress saved locally', {
-        duration: 4000,
-        description: 'Session expired. Progress is saved locally and will be synced when you log in again.'
-      });
-      
-      // Return early - we've saved locally and shown toast
-      console.log('✅ Progress saved to localStorage (session expired)');
-      return;
-    }
-    
-    // Session is valid, use session user ID
-    userId = session.user.id;
-
-    // Also verify the user ID matches
-    if (user.id !== userId) {
-      console.warn('User ID mismatch, updating user state...', { storedId: user.id, sessionId: userId });
-      // Update user state with correct ID
-      const updatedUser = { ...user, id: userId };
-      setUser(updatedUser);
-      localStorage.setItem('virtualLabUser', JSON.stringify(updatedUser));
-    }
-
-    // Retry logic with exponential backoff
-    const maxRetries = 3;
-    let lastError: any = null;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        if (attempt > 0) {
-          // Wait before retrying (exponential backoff)
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`Retrying save (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-
-        // Try upsert first
-        const { error: upsertError } = await supabase
-          .from('user_challenge_submissions')
-          .upsert({
-            user_id: userId,
-            challenge_id: challengeId,
-            score: score,
-            total_points: totalPoints,
-            submitted_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,challenge_id'
-          });
-
-        if (!upsertError) {
-          // Success! Break out of retry loop
-          lastError = null;
-          break;
-        }
-
-        // Handle specific error cases
-        if (upsertError.code === '23505' || upsertError.message?.includes('duplicate') || upsertError.message?.includes('409')) {
-          console.log('Submission already exists, updating score...');
-          // Try to update the existing record
-          const { error: updateError } = await supabase
-            .from('user_challenge_submissions')
-            .update({
-              score: score,
-              total_points: totalPoints,
-              submitted_at: new Date().toISOString()
-            })
-            .eq('user_id', userId)
-            .eq('challenge_id', challengeId);
-          
-          if (!updateError) {
-            // Update succeeded
-            lastError = null;
-            break;
-          } else {
-            lastError = updateError;
-            console.error('Error updating submission:', updateError);
-          }
-        } else {
-          lastError = upsertError;
-          console.error(`Database error (attempt ${attempt + 1}):`, upsertError);
-        }
-
-        // If this is the last attempt, throw the error
-        if (attempt === maxRetries - 1) {
-          throw lastError;
-        }
-
-      } catch (error: any) {
-        lastError = error;
-        console.error(`Save attempt ${attempt + 1} failed:`, error);
-        
-        // If this is the last attempt, handle the error
-        if (attempt === maxRetries - 1) {
-          // Save to localStorage as backup even if database fails
-          console.warn('Database save failed, saving to localStorage as backup');
-          const backupKey = `challenge_submission_backup_${challengeId}`;
-          localStorage.setItem(backupKey, JSON.stringify({
-            challengeId,
-            score,
-            totalPoints,
-            userId,
-            timestamp: new Date().toISOString()
-          }));
-        }
-      }
-    }
-
-    // Always update local state (even if database save failed)
-    // This ensures UI is updated immediately
+    // Update local state IMMEDIATELY (for instant UI feedback)
+    // This happens in parallel with database save
     const existingIndex = user.completedChallenges?.findIndex(
       c => c.challengeId === challengeId
     ) ?? -1;
@@ -564,12 +418,143 @@ export default function App() {
 
     const updatedUser = {
       ...user,
-      id: userId, // Ensure we use the correct user ID
       completedChallenges: updatedCompletedChallenges
     };
 
+    // Update state immediately (don't wait for database)
     setUser(updatedUser);
     localStorage.setItem('virtualLabUser', JSON.stringify(updatedUser));
+
+    // Now check session (this happens in parallel with state update)
+    const { data: { session }, error: sessionError } = await sessionPromise;
+    let userId: string | null = null;
+    
+    if (sessionError || !session?.user) {
+      console.warn('No active Supabase session, saving to localStorage only:', sessionError);
+      userId = user.id;
+      
+      // Save to localStorage as backup
+      const backupKey = `challenge_submission_backup_${challengeId}`;
+      localStorage.setItem(backupKey, JSON.stringify({
+        challengeId,
+        score,
+        totalPoints,
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Show info that it's saved locally
+      toast.info('✅ Progress saved locally', {
+        duration: 4000,
+        description: 'Session expired. Progress is saved locally and will be synced when you log in again.'
+      });
+      
+      console.log('✅ Progress saved to localStorage (session expired)');
+      return; // Exit early - saved locally
+    }
+    
+    // Session is valid, use session user ID
+    userId = session.user.id;
+
+    // Update user ID if mismatch (non-blocking)
+    if (user.id !== userId) {
+      console.warn('User ID mismatch, updating user state...', { storedId: user.id, sessionId: userId });
+      const correctedUser = { ...updatedUser, id: userId };
+      setUser(correctedUser);
+      localStorage.setItem('virtualLabUser', JSON.stringify(correctedUser));
+    }
+
+    // INSTANT SAVE: Try database save immediately (no delays on first attempt)
+    // Retry logic only kicks in if first attempt fails
+    const maxRetries = 3;
+    let lastError: any = null;
+    let saveSuccess = false;
+
+    for (let attempt = 0; attempt < maxRetries && !saveSuccess; attempt++) {
+      try {
+        // Only delay on retries (attempt > 0), first attempt is instant
+        if (attempt > 0) {
+          // Exponential backoff for retries only
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Retrying save (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          console.log('🚀 Attempting instant database save...');
+        }
+
+        // Try upsert immediately (no delays on first attempt)
+        const { error: upsertError } = await supabase
+          .from('user_challenge_submissions')
+          .upsert({
+            user_id: userId,
+            challenge_id: challengeId,
+            score: score,
+            total_points: totalPoints,
+            submitted_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,challenge_id'
+          });
+
+        if (!upsertError) {
+          // Success! Mark as saved and break
+          lastError = null;
+          saveSuccess = true;
+          console.log('✅ Database save successful!');
+          break;
+        }
+
+        // Handle specific error cases
+        if (upsertError.code === '23505' || upsertError.message?.includes('duplicate') || upsertError.message?.includes('409')) {
+          console.log('Submission exists, updating score...');
+          // Try to update the existing record
+          const { error: updateError } = await supabase
+            .from('user_challenge_submissions')
+            .update({
+              score: score,
+              total_points: totalPoints,
+              submitted_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('challenge_id', challengeId);
+          
+          if (!updateError) {
+            // Update succeeded
+            lastError = null;
+            saveSuccess = true;
+            console.log('✅ Database update successful!');
+            break;
+          } else {
+            lastError = updateError;
+            console.error('Error updating submission:', updateError);
+          }
+        } else {
+          lastError = upsertError;
+          console.error(`Database error (attempt ${attempt + 1}):`, upsertError);
+        }
+
+        // If this is the last attempt, we'll handle it after the loop
+        if (attempt === maxRetries - 1) {
+          lastError = upsertError;
+        }
+
+      } catch (error: any) {
+        lastError = error;
+        console.error(`Save attempt ${attempt + 1} failed:`, error);
+      }
+    }
+
+    // If all retries failed, save to localStorage as backup
+    if (!saveSuccess && lastError) {
+      console.warn('Database save failed after all retries, saving to localStorage as backup');
+      const backupKey = `challenge_submission_backup_${challengeId}`;
+      localStorage.setItem(backupKey, JSON.stringify({
+        challengeId,
+        score,
+        totalPoints,
+        userId,
+        timestamp: new Date().toISOString()
+      }));
+    }
 
     // CRITICAL: Always show feedback to user - User must know if progress was saved
     // This toast will ALWAYS appear, ensuring user knows their progress status
