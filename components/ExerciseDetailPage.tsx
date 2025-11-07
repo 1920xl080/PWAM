@@ -101,7 +101,7 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (answers.length < challenge.questions.length) {
       toast.error('Please answer all questions before submitting');
       return;
@@ -121,20 +121,36 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
     setScore(totalScore);
     setIsSubmitted(true);
     
-    // Save the completed challenge
-    authContext.saveCompletedChallenge(challenge.id, totalScore, challenge.totalPoints);
-    
     // Clear the draft from localStorage since exercise is completed
     const draftKey = `exercise-draft-${challenge.id}`;
     localStorage.removeItem(draftKey);
     
+    // Show score toast immediately (this appears first)
     const percentage = (totalScore / challenge.totalPoints) * 100;
     if (percentage === 100) {
-      toast.success(`Perfect score! You got ${totalScore}/${challenge.totalPoints} points!`);
+      toast.success(`Perfect score! You got ${totalScore}/${challenge.totalPoints} points!`, {
+        duration: 2000
+      });
     } else if (percentage >= 70) {
-      toast.success(`Great job! You scored ${totalScore}/${challenge.totalPoints} points!`);
+      toast.success(`Great job! You scored ${totalScore}/${challenge.totalPoints} points!`, {
+        duration: 2000
+      });
     } else {
-      toast.info(`You scored ${totalScore}/${challenge.totalPoints} points. Keep practicing!`);
+      toast.info(`You scored ${totalScore}/${challenge.totalPoints} points. Keep practicing!`, {
+        duration: 2000
+      });
+    }
+
+    // Save the completed challenge and wait for it to complete
+    // The saveCompletedChallenge function will show "Progress saved!" toast after saving
+    // This ensures user always sees confirmation that their progress was saved
+    try {
+      await authContext.saveCompletedChallenge(challenge.id, totalScore, challenge.totalPoints);
+      // If we get here, progress was saved successfully (toast already shown by saveCompletedChallenge)
+    } catch (error) {
+      // Error handling and toast are already done in saveCompletedChallenge
+      // We catch here just to prevent unhandled promise rejection
+      console.error('Error in handleSubmit while saving (already handled):', error);
     }
 
     // Scroll to top to see results

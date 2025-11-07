@@ -24,7 +24,7 @@ export type AuthContextType = {
   user: User | null;
   loginWithGoogle: () => Promise<boolean>;
   logout: () => Promise<void>;
-  saveCompletedChallenge: (challengeId: string, score: number, totalPoints: number) => void;
+  saveCompletedChallenge: (challengeId: string, score: number, totalPoints: number) => Promise<void>;
   isLoggingOut?: boolean;
 };
 
@@ -392,30 +392,66 @@ export default function App() {
     // First, verify we have a user
     if (!user) {
       toast.error('You must be logged in to save progress');
-      return;
+      throw new Error('User not logged in');
     }
 
     // Verify Supabase session is active and get the actual auth user
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    let userId: string | null = null;
+    
     if (sessionError || !session?.user) {
-      console.error('No active session:', sessionError);
-      toast.error('Session expired. Please log in again.');
-      // Try to reload user data
-      const savedUser = localStorage.getItem('virtualLabUser');
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
-        } catch (e) {
-          console.error('Error parsing saved user:', e);
-        }
-      }
+      console.warn('No active Supabase session, will save to localStorage only:', sessionError);
+      // Use user ID from state (might still work if session is just expired)
+      userId = user.id;
+      
+      // Save to localStorage as backup immediately
+      const backupKey = `challenge_submission_backup_${challengeId}`;
+      localStorage.setItem(backupKey, JSON.stringify({
+        challengeId,
+        score,
+        totalPoints,
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Update local state first
+      const existingIndex = user.completedChallenges?.findIndex(
+        c => c.challengeId === challengeId
+      ) ?? -1;
+      
+      const updatedCompletedChallenges = existingIndex >= 0
+        ? user.completedChallenges!.map((c, index) =>
+            index === existingIndex
+              ? { challengeId, score, date: new Date().toISOString() }
+              : c
+          )
+        : [
+            ...(user.completedChallenges || []),
+            { challengeId, score, date: new Date().toISOString() }
+          ];
+
+      const updatedUser = {
+        ...user,
+        completedChallenges: updatedCompletedChallenges
+      };
+
+      setUser(updatedUser);
+      localStorage.setItem('virtualLabUser', JSON.stringify(updatedUser));
+      
+      // Show info that it's saved locally (this counts as "progress saved" feedback)
+      toast.info('✅ Progress saved locally', {
+        duration: 4000,
+        description: 'Session expired. Progress is saved locally and will be synced when you log in again.'
+      });
+      
+      // Return early - we've saved locally and shown toast
+      console.log('✅ Progress saved to localStorage (session expired)');
       return;
     }
-
-    // Use the session user ID (most reliable)
-    const userId = session.user.id;
     
+    // Session is valid, use session user ID
+    userId = session.user.id;
+
     // Also verify the user ID matches
     if (user.id !== userId) {
       console.warn('User ID mismatch, updating user state...', { storedId: user.id, sessionId: userId });
@@ -509,13 +545,6 @@ export default function App() {
       }
     }
 
-    // If all retries failed, show error but still update local state
-    if (lastError) {
-      console.error('Failed to save after all retries:', lastError);
-      toast.error('Failed to save progress. It will be saved when you log in again.');
-      // Still update local state so UI reflects the submission
-    }
-
     // Always update local state (even if database save failed)
     // This ensures UI is updated immediately
     const existingIndex = user.completedChallenges?.findIndex(
@@ -542,9 +571,24 @@ export default function App() {
     setUser(updatedUser);
     localStorage.setItem('virtualLabUser', JSON.stringify(updatedUser));
 
-    // Only show success if database save succeeded
+    // CRITICAL: Always show feedback to user - User must know if progress was saved
+    // This toast will ALWAYS appear, ensuring user knows their progress status
     if (!lastError) {
-      toast.success('Progress saved!');
+      // Success - show success message (this should ALWAYS appear if save succeeded)
+      toast.success('✅ Progress saved!', {
+        duration: 3000,
+        position: 'top-center'
+      });
+    } else {
+      // Failed after all retries - show error but inform about local backup
+      console.error('Failed to save after all retries:', lastError);
+      toast.error('⚠️ Progress saved locally only', {
+        duration: 5000,
+        position: 'top-center',
+        description: 'Unable to save to server. Progress is saved locally and will sync on next login.'
+      });
+      // Re-throw error so caller knows it failed (but local state is already updated)
+      throw lastError;
     }
   };
 
