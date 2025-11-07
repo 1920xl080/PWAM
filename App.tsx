@@ -1,5 +1,5 @@
 import { supabase } from './lib/supabase';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { HomePage } from './components/HomePage';
 import { ChallengePage } from './components/ChallengePage';
@@ -46,6 +46,60 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+function AppRoutes({ authContext }: { authContext: AuthContextType }) {
+  const navigate = useNavigate();
+
+  // Create logout function with navigation
+  const logoutWithNavigate = async () => {
+    await authContext.logout();
+    navigate('/', { replace: true });
+  };
+
+  const enhancedAuthContext: AuthContextType = {
+    ...authContext,
+    logout: logoutWithNavigate
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <Routes>
+        <Route path="/" element={<HomePage authContext={enhancedAuthContext} />} />
+        <Route 
+          path="/auth" 
+          element={authContext.user ? <Navigate to="/dashboard" replace /> : <AuthPage authContext={enhancedAuthContext} />} 
+        />
+        
+        {/* Protected Routes */}
+        <Route
+          path="/challenges"
+          element={
+            <ProtectedRoute>
+              <ChallengePage authContext={enhancedAuthContext} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exercise/:id"
+          element={
+            <ProtectedRoute>
+              <ExerciseDetailPage authContext={enhancedAuthContext} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage authContext={enhancedAuthContext} />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <Toaster />
+    </div>
+  );
 }
 
 export default function App() {
@@ -189,7 +243,7 @@ export default function App() {
     setUser(null);
     localStorage.removeItem('virtualLabUser');
     toast.success('Logged out successfully');
-    Navigate('/');  // ✅ Redirect to homepage
+    // Navigation will be handled by AppRoutes component
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {
@@ -247,43 +301,7 @@ export default function App() {
       </AnimatePresence>
 
       <Router>
-        <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-          <Routes>
-            <Route path="/" element={<HomePage authContext={authContext} />} />
-            {/* <Route path="/auth" element={<AuthPage authContext={authContext} />} /> */}
-            <Route 
-              path="/auth" 
-              element={user ? <Navigate to="/dashboard" replace /> : <AuthPage authContext={authContext} />} 
-            />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/challenges"
-              element={
-                <ProtectedRoute>
-                  <ChallengePage authContext={authContext} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/exercise/:id"
-              element={
-                <ProtectedRoute>
-                  <ExerciseDetailPage authContext={authContext} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage authContext={authContext} />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-          <Toaster />
-        </div>
+        <AppRoutes authContext={authContext} />
       </Router>
     </>
   );
