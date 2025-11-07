@@ -1,6 +1,6 @@
 import { supabase } from './lib/supabase';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { HomePage } from './components/HomePage';
 import { ChallengePage } from './components/ChallengePage';
 import { ExerciseDetailPage } from './components/ExerciseDetailPage';
@@ -25,6 +25,7 @@ export type AuthContextType = {
   loginWithGoogle: () => Promise<boolean>;
   logout: () => Promise<void>;
   saveCompletedChallenge: (challengeId: string, score: number, totalPoints: number) => void;
+  isLoggingOut?: boolean;
 };
 
 // Removed ProtectedRoute - no longer needed
@@ -85,6 +86,8 @@ function AppRoutes({ authContext }: { authContext: AuthContextType }) {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isLoggingOutRef = useRef(false);
 
   useEffect(() => {
     // Check if splash has been shown in this session
@@ -111,6 +114,8 @@ export default function App() {
         console.log('✅ User authenticated:', session.user.email);
         await handleAuthUser(session.user);
       } else if (event === 'SIGNED_OUT') {
+        console.log('✅ User signed out via Supabase');
+        // Clear state (logout function handles the rest)
         setUser(null);
         localStorage.removeItem('virtualLabUser');
       }
@@ -257,27 +262,52 @@ export default function App() {
   };
 
   const logout = async () => {
+    // Prevent multiple simultaneous logout attempts using ref (immediate check)
+    if (isLoggingOutRef.current) {
+      console.log('Logout already in progress');
+      return;
+    }
+
+    isLoggingOutRef.current = true;
+    setIsLoggingOut(true);
+    
     try {
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        toast.error('Error logging out');
-        return;
-      }
+      console.log('Starting logout process...');
       
-      // Clear user state
+      // Clear user state and localStorage FIRST (before Supabase call)
+      // This ensures user is logged out locally even if Supabase call fails
       setUser(null);
       localStorage.removeItem('virtualLabUser');
+      sessionStorage.removeItem('splashShown'); // Clear splash state too
       
-      // Navigate to home page
+      // Then sign out from Supabase
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Supabase logout error:', error);
+          // Continue anyway - we've already cleared local state
+        } else {
+          console.log('✅ Supabase session cleared');
+        }
+      } catch (supabaseError) {
+        console.error('Supabase signOut exception:', supabaseError);
+        // Continue anyway
+      }
+      
+      console.log('✅ Logout successful, redirecting to home...');
+      
+      // Immediate redirect (don't wait)
       window.location.href = '/';
       
-      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Unexpected logout error:', error);
-      toast.error('Error logging out');
+      // Even if there's an error, clear state and redirect
+      setUser(null);
+      localStorage.removeItem('virtualLabUser');
+      sessionStorage.removeItem('splashShown');
+      window.location.href = '/';
     }
+    // Note: No finally block needed - page will reload via window.location.href
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {
@@ -324,7 +354,13 @@ export default function App() {
     }
   };
 
-  const authContext: AuthContextType = { user, loginWithGoogle, logout, saveCompletedChallenge};
+  const authContext: AuthContextType = { 
+    user, 
+    loginWithGoogle, 
+    logout, 
+    saveCompletedChallenge,
+    isLoggingOut 
+  };
 
   return (
     <>

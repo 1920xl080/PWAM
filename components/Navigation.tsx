@@ -73,7 +73,9 @@ export function Navigation({ authContext }: NavigationProps) {
                 <Button 
                   variant="outline" 
                   size="sm" 
+                  disabled={authContext.isLoggingOut}
                   onClick={async () => {
+                    if (authContext.isLoggingOut) return;
                     try {
                       await logout();
                     } catch (error) {
@@ -82,7 +84,7 @@ export function Navigation({ authContext }: NavigationProps) {
                   }}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  {authContext.isLoggingOut ? 'Logging out...' : 'Logout'}
                 </Button>
               </>
             ) : (
@@ -136,7 +138,9 @@ export function Navigation({ authContext }: NavigationProps) {
               })}
               {user ? (
                 <button
+                  disabled={authContext.isLoggingOut}
                   onClick={async () => {
+                    if (authContext.isLoggingOut) return;
                     try {
                       setMobileMenuOpen(false);
                       await logout();
@@ -144,10 +148,10 @@ export function Navigation({ authContext }: NavigationProps) {
                       console.error('Logout error:', error);
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <LogOut className="w-4 h-4" />
-                  Logout
+                  {authContext.isLoggingOut ? 'Logging out...' : 'Logout'}
                 </button>
               ) : (
                 <Link
