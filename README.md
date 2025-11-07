@@ -3,8 +3,8 @@
 <div align="center">
 
 ![Virtual Lab ITB](https://img.shields.io/badge/ITB-Virtual_Lab-blue?style=for-the-badge)
-![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)
 ![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)
 
 **Interactive learning platform for ITB students to master computational thinking through hands-on challenges**
@@ -15,123 +15,90 @@
 
 ---
 
-## 📋 Table of Contents
-
-- [About the Project](#-about-the-project)
-- [Key Features](#-key-features)
-- [Technology Stack](#-technology-stack)
-- [Project Structure](#-project-structure)
-- [Quick Start](#-quick-start)
-- [Project Status](#-project-status)
-- [Documentation](#-documentation)
-- [Contributing](#-contributing)
-
----
-
 ## 🎯 About the Project
 
-**Virtual Lab: Computational Thinking ITB** is a web-based educational platform designed specifically for Institut Teknologi Bandung (ITB) students to learn and practice computational thinking concepts through interactive mini-challenges.
+**Virtual Lab: Computational Thinking ITB** is a modern web-based educational platform designed specifically for Institut Teknologi Bandung (ITB) students to learn and practice computational thinking concepts through interactive mini-challenges and quizzes.
 
-### Problem Statement
+### The Problem
 
 Traditional computational thinking courses often lack:
-- Interactive practice environments
-- Immediate feedback mechanisms
-- Engaging learning experiences
-- Progress tracking for students
+- **Interactive practice environments** - Students need hands-on experience
+- **Immediate feedback mechanisms** - Learning requires instant validation
+- **Engaging learning experiences** - Motivation comes from gamification
+- **Progress tracking** - Students want to see their improvement over time
 
-### Solution
+### Our Solution
 
-Virtual Lab ITB provides an immersive, hands-on learning experience where students can:
-- Practice computational thinking through interactive challenges
-- Receive instant feedback on their solutions
-- Track their progress and achievements
-- Access course materials and exercises
-- Collaborate within their classes
+Virtual Lab ITB provides a comprehensive learning platform that combines:
+- 🎓 **Interactive Challenges** - 10+ curated challenges across multiple difficulty levels
+- ⚡ **Instant Feedback** - Real-time quiz evaluation with detailed explanations
+- 📊 **Progress Dashboard** - Track achievements, scores, and completion rates
+- 🔐 **Secure Authentication** - Google OAuth restricted to ITB student emails
+- 🏫 **Academic Integration** - Browse 12 ITB faculties and enroll in classes
+- 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
 
 ---
 
 ## ✨ Key Features
 
-### 🎓 Interactive Learning
-- **10+ Coding Challenges** - Diverse exercises covering fundamental computational thinking concepts
-- **Real-time Feedback** - Instant evaluation with detailed explanations
-- **Difficulty Levels** - Challenges ranging from Easy to Hard
-- **Exercise Details** - Comprehensive problem descriptions and examples
+### Educational Features
+- **10+ Interactive Challenges** across 5 categories
+- **40+ Quiz Questions** with detailed explanations and feedback
+- **Multiple Difficulty Levels** - Easy, Medium, and Hard challenges
+- **Progress Tracking** - Personal dashboard with statistics and achievements
+- **Real-time Score Calculation** - Immediate feedback after each quiz
+- **Category-based Learning** - Organized challenges by topic
 
-### 📊 Progress Tracking
-- **Personal Dashboard** - Track completed challenges, scores, and achievements
-- **Score History** - View past performance and improvement over time
-- **Achievement System** - Unlock badges and milestones as you progress
+### Authentication & Security
+- **Google OAuth Integration** - One-click login with Google accounts
+- **Email Domain Restriction** - Only @std.stei.itb.ac.id emails allowed
+- **Row Level Security (RLS)** - Database-level security for user data
+- **Session Management** - Secure session handling with Supabase Auth
+- **Data Privacy** - Users can only access their own progress data
 
-### 🔐 Secure Authentication
-- **Google OAuth Integration** - Seamless login with Google accounts
-- **ITB Email Restriction** - Access limited to `@std.stei.itb.ac.id` email domain
-- **Role-based Access** - Support for both students and lecturers
+### Academic Integration
+- **12 ITB Faculties** - Browse all major faculties at ITB
+- **Class Enrollment System** - Join courses across different departments
+- **85+ Faculty Members** - Instructor showcase with profiles
+- **Multi-faculty Support** - STEI, FTI, SITH, and more
+- **Course Management** - Organize challenges by course and faculty
 
-### 🏫 Class Management
-- **Faculty Browsing** - Explore different faculties and departments
-- **Class Enrollment** - Join classes and access course-specific content
-- **Organized Learning** - Structured curriculum and exercise organization
-
-### 📱 Modern User Experience
-- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices
-- **Smooth Animations** - Polished UI with Framer Motion animations
-- **Modern UI Components** - Built with shadcn/ui and Tailwind CSS
-- **Accessibility** - Designed with accessibility best practices
+### User Experience
+- **Smooth Animations** - Motion (Framer Motion) powered transitions
+- **Modern UI Design** - Clean, grid-based layouts with shadcn/ui components
+- **Responsive Design** - Mobile-first approach, works on all devices
+- **Fast Performance** - Optimized builds with Vite
+- **Accessible** - Semantic HTML and ARIA labels for screen readers
 
 ---
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18** - Modern UI library
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and dev server
+- **React 18** - Modern UI library with hooks and context
+- **TypeScript 5** - Type-safe development
+- **Vite** - Fast build tool with hot module replacement
 - **Tailwind CSS** - Utility-first CSS framework
-- **Framer Motion** - Animation library
+- **Framer Motion** - Smooth animations and transitions
 - **React Router** - Client-side routing
-- **shadcn/ui** - High-quality component library
-- **Lucide React** - Icon library
+
+### UI Components
+- **shadcn/ui** - High-quality, accessible component library
+- **Lucide React** - Beautiful icon library
+- **Radix UI** - Unstyled, accessible component primitives
 
 ### Backend & Infrastructure
-- **Supabase** - Backend-as-a-Service (PostgreSQL, Auth, API)
-- **Google OAuth** - Authentication provider
-- **Row Level Security (RLS)** - Database security policies
+- **Supabase** - Backend as a Service (BaaS)
+  - PostgreSQL database
+  - Authentication (Google OAuth)
+  - Row Level Security (RLS)
+  - Real-time subscriptions
+- **Vercel** - Hosting and deployment platform
 
 ### Development Tools
 - **TypeScript** - Static type checking
 - **ESLint** - Code linting
 - **PostCSS** - CSS processing
-- **Vercel** - Deployment platform
-
----
-
-## 📁 Project Structure
-
-```
-PWAM/
-├── components/          # React UI components
-│   ├── HomePage.tsx    # Landing page
-│   ├── ChallengePage.tsx # Challenge listing
-│   ├── ExerciseDetailPage.tsx # Individual exercise view
-│   ├── DashboardPage.tsx # User dashboard
-│   ├── AuthPage.tsx    # Authentication page
-│   ├── Navigation.tsx  # Navigation component
-│   └── ui/             # Reusable UI components
-├── data/               # Mock data (for development)
-│   └── mockData.ts
-├── lib/                # Utility libraries
-│   └── supabase.ts    # Supabase client configuration
-├── styles/             # Global styles
-│   └── globals.css
-├── assets/             # Static assets
-│   └── ITB_logo.svg
-├── docs/               # Comprehensive documentation
-├── App.tsx             # Main application component
-├── main.tsx            # Application entry point
-└── package.json        # Dependencies and scripts
-```
 
 ---
 
@@ -139,152 +106,206 @@ PWAM/
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- A Supabase account (for backend setup)
-- Google OAuth credentials (for authentication)
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
+- **Supabase account** (free tier is sufficient)
+- **Google Cloud Console** account (for OAuth)
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd PWAM
-   ```
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd PWAM
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# 2. Install dependencies
+npm install
 
-3. **Set up environment variables**
-   ```bash
-   # Create .env file
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   VITE_ALLOWED_EMAIL_DOMAIN=std.stei.itb.ac.id
-   ```
+# 3. Create .env file (copy from .env.example if available)
+# Add your Supabase credentials:
+# VITE_SUPABASE_URL=your_supabase_url
+# VITE_SUPABASE_ANON_KEY=your_anon_key
+# VITE_ALLOWED_EMAIL_DOMAIN=std.stei.itb.ac.id
 
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
+# 4. Start development server
+npm run dev
+```
 
-5. **Open your browser**
-   ```
-   http://localhost:5173
-   ```
+🎉 **That's it!** Open `http://localhost:5173` in your browser.
 
-### Backend Setup
+### Next Steps
 
-⚠️ **Important**: The frontend is complete, but the backend needs to be configured before production use.
-
-For detailed backend setup instructions, see:
-- [TLDR.md](./TLDR.md) - Quick overview
-- [Backend Setup Guide](./docs/reference/BACKEND-SETUP-STATUS.md) - Detailed instructions
-- [Security Guide](./docs/reference/SECURITY-GUIDE.md) - Security configuration
-
-**Quick Setup Checklist:**
-1. Create Supabase project
-2. Set up database schema
-3. Enable Row Level Security (RLS)
-4. Configure Google OAuth
-5. Add email validation
-6. Test security measures
+1. 📖 **[TL;DR Guide](./TLDR.md)** - Quick 5-minute overview
+2. 🗄️ **[Database Setup](./docs/reference/BACKEND-SETUP-STATUS.md)** - Configure Supabase backend
+3. 🔐 **[OAuth Setup](./docs/)** - Enable Google authentication
+4. 🚀 **[Deployment Guide](./VERCEL_DEPLOYMENT.md)** - Deploy to production
 
 ---
 
 ## 📊 Project Status
 
 ### ✅ Completed
-- [x] Frontend UI/UX (100%)
-- [x] Component architecture
-- [x] Routing and navigation
-- [x] Responsive design
-- [x] Animation system
-- [x] Mock data integration
-- [x] TypeScript type definitions
 
-### ⚠️ In Progress / Needs Setup
-- [ ] Supabase backend configuration
-- [ ] Database schema implementation
+- [x] Complete frontend with all pages and components
+- [x] Interactive quiz system with 40+ questions
+- [x] Challenge browsing and filtering
+- [x] User authentication (Google OAuth)
+- [x] Student dashboard with progress tracking
+- [x] Faculty browser with 12 ITB faculties
+- [x] Class enrollment system
+- [x] Responsive design (mobile, tablet, desktop)
+- [x] Smooth animations and transitions
+- [x] TypeScript type safety
+- [x] Component library integration
+
+### 🚧 Setup Required
+
+- [ ] Supabase database configuration
+- [ ] Google OAuth setup
 - [ ] Row Level Security policies
-- [ ] Google OAuth integration
+- [ ] Environment variables configuration
 - [ ] Production deployment
-- [ ] Security hardening
 
-### 📝 Documentation
-- [x] Project documentation
-- [x] Architecture diagrams
-- [x] Setup guides
-- [x] Security guidelines
-- [x] API documentation templates
+### 🔮 Future Features
+
+- [ ] More challenges (target: 25+)
+- [ ] Coding challenges with code editor
+- [ ] Leaderboards and rankings
+- [ ] Badges and achievements system
+- [ ] Instructor dashboard
+- [ ] AI-powered hints and suggestions
 
 ---
 
-## 📚 Documentation
+## 📖 Documentation
 
-Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
 
-- **[TLDR.md](./TLDR.md)** - 5-minute quick start guide
+### Quick Links
 - **[Documentation Index](./docs/INDEX.md)** - Complete documentation hub
-- **[Architecture](./docs/reference/ARCHITECTURE.md)** - System architecture
-- **[Getting Started](./docs/actual-documentation/GETTING-STARTED.md)** - Detailed setup guide
-- **[FAQ](./docs/actual-documentation/FAQ.md)** - Frequently asked questions
+- **[TL;DR](./TLDR.md)** - 5-minute quick start guide
+- **[Architecture](./docs/reference/ARCHITECTURE.md)** - System design and architecture
 - **[Security Guide](./docs/reference/SECURITY-GUIDE.md)** - Security best practices
+- **[FAQ](./docs/actual-documentation/FAQ.md)** - Frequently asked questions
+
+### Documentation Structure
+```
+docs/
+├── actual-documentation/    # Main project documentation
+│   ├── README.md            # Detailed project overview
+│   ├── ARCHITECTURE.md      # System architecture
+│   └── FAQ.md               # Frequently asked questions
+├── reference/               # Reference documentation
+│   ├── ARCHITECTURE.md      # Technical architecture
+│   ├── SECURITY-GUIDE.md    # Security considerations
+│   └── BACKEND-SETUP-STATUS.md  # Backend setup guide
+└── INDEX.md                 # Documentation index
+```
 
 ---
 
-## 🎓 For ITB Students & Instructors
+## 🏗️ Architecture Overview
 
-This platform is designed specifically for the ITB Computational Thinking course. Key features:
+### System Architecture
 
-- **Restricted Access** - Only ITB students with `@std.stei.itb.ac.id` emails can access
-- **Course Integration** - Supports class enrollment and faculty organization
-- **Progress Tracking** - Instructors can monitor student progress
-- **Scalable** - Built to handle multiple classes and hundreds of students
+```
+┌─────────────────────────────────────┐
+│         Frontend (React)             │
+├─────────────────────────────────────┤
+│ • Quiz content (mockData.ts)        │
+│ • UI Components (components/)       │
+│ • State Management (Context API)    │
+│ • Routing (React Router)            │
+└────────────┬────────────────────────┘
+             │
+             │ HTTPS API Calls
+             ↓
+┌─────────────────────────────────────┐
+│      Backend (Supabase)              │
+├─────────────────────────────────────┤
+│ • Authentication (Google OAuth)     │
+│ • Database (PostgreSQL)             │
+│ • Row Level Security (RLS)          │
+│ • User progress tracking            │
+│ • Session management                │
+└─────────────────────────────────────┘
+```
+
+### Design Decisions
+
+- **Static Quiz Content**: Quiz questions are stored in `data/mockData.ts` for simplicity and fast loading
+- **Dynamic User Data**: User progress and submissions are stored in Supabase database
+- **Component-based Architecture**: Reusable UI components using shadcn/ui
+- **Type Safety**: Full TypeScript coverage for better development experience
+- **Security First**: Row Level Security ensures users can only access their own data
 
 ---
 
 ## 🤝 Contributing
 
-This is an educational project for ITB. If you're contributing:
+We welcome contributions from ITB students and faculty!
 
-1. Follow the existing code style and patterns
-2. Ensure TypeScript types are properly defined
-3. Maintain responsive design principles
-4. Test on multiple devices
-5. Update documentation as needed
+### How to Contribute
+
+1. **Report Bugs** - Open an issue with detailed description
+2. **Suggest Features** - Share your ideas for improvement
+3. **Submit Pull Requests** - Follow the existing code style
+4. **Improve Documentation** - Help make the docs better
+
+### Development Guidelines
+
+- Follow TypeScript best practices
+- Use existing component patterns
+- Maintain responsive design
+- Test on multiple devices
+- Update documentation as needed
 
 ---
 
 ## 📄 License
 
-This project is developed for educational purposes at Institut Teknologi Bandung (ITB).
+This project is licensed under the **MIT License**.
+
+### Academic Use
+
+This project is designed for educational purposes at ITB. Students and faculty are encouraged to:
+- ✅ Use for learning and teaching
+- ✅ Fork and modify for courses
+- ✅ Reference in academic work
+- ⚠️ Please provide attribution
+
+---
+
+## 📞 Support & Contact
+
+### Get Help
+
+- 📖 **[Documentation](./docs/INDEX.md)** - Start here for detailed guides
+- ❓ **[FAQ](./docs/actual-documentation/FAQ.md)** - Common questions answered
+- 🐛 **Issues** - Report bugs or request features
+- 💬 **Discussions** - Ask questions and share ideas
+
+### ITB Resources
+
+- **STEI Website** - [stei.itb.ac.id](https://stei.itb.ac.id)
+- **ITB Student Portal** - [studentportal.itb.ac.id](https://studentportal.itb.ac.id)
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Institut Teknologi Bandung (ITB)** - For providing the educational context
-- **Supabase** - For the excellent backend infrastructure
-- **shadcn/ui** - For the beautiful component library
-- **React Community** - For the amazing ecosystem
-
----
-
-## 📞 Support
-
-For questions or issues:
-1. Check the [FAQ](./docs/actual-documentation/FAQ.md)
-2. Review the [Documentation Index](./docs/INDEX.md)
-3. Consult the [Troubleshooting Guide](./docs/maintenance/CLEANUP-GUIDE.md)
+Special thanks to:
+- **Institut Teknologi Bandung** - For providing the educational context
+- **STEI Faculty** - For computational thinking curriculum guidance
+- **Open Source Community** - React, Supabase, shadcn/ui, and all dependencies
+- **ITB Students** - For feedback and testing
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for ITB Students**
+**Made with ❤️ for ITB Students**
 
-[🚀 Get Started](./TLDR.md) • [📖 Read Docs](./docs/INDEX.md) • [🏗️ View Architecture](./docs/reference/ARCHITECTURE.md)
+[⬆ Back to Top](#virtual-lab-computational-thinking-itb)
 
 </div>
