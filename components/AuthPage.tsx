@@ -25,7 +25,6 @@ export function AuthPage({ authContext }: AuthPageProps) {
     try {
       const success = await authContext.loginWithGoogle();
       if (success) {
-        toast.success('Successfully logged in with Google!');
         navigate('/dashboard');
       } else {
         toast.error('Login failed. Please use a valid STEI ITB student email (@std.stei.itb.ac.id)');

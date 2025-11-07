@@ -65,3 +65,5 @@ guidelines/
 
 # Tests Database Connection
 test-supabase.ts/
+
+supabase/
