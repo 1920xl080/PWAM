@@ -271,43 +271,21 @@ export default function App() {
     isLoggingOutRef.current = true;
     setIsLoggingOut(true);
     
-    try {
-      console.log('Starting logout process...');
-      
-      // Clear user state and localStorage FIRST (before Supabase call)
-      // This ensures user is logged out locally even if Supabase call fails
-      setUser(null);
-      localStorage.removeItem('virtualLabUser');
-      sessionStorage.removeItem('splashShown'); // Clear splash state too
-      
-      // Then sign out from Supabase
-      try {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error('Supabase logout error:', error);
-          // Continue anyway - we've already cleared local state
-        } else {
-          console.log('✅ Supabase session cleared');
-        }
-      } catch (supabaseError) {
-        console.error('Supabase signOut exception:', supabaseError);
-        // Continue anyway
-      }
-      
-      console.log('✅ Logout successful, redirecting to home...');
-      
-      // Immediate redirect (don't wait)
-      window.location.href = '/';
-      
-    } catch (error) {
-      console.error('Unexpected logout error:', error);
-      // Even if there's an error, clear state and redirect
-      setUser(null);
-      localStorage.removeItem('virtualLabUser');
-      sessionStorage.removeItem('splashShown');
-      window.location.href = '/';
-    }
-    // Note: No finally block needed - page will reload via window.location.href
+    console.log('Starting logout process...');
+    
+    // Clear user state and localStorage FIRST
+    setUser(null);
+    localStorage.removeItem('virtualLabUser');
+    sessionStorage.removeItem('splashShown');
+    
+    // Sign out from Supabase (fire and forget - don't wait)
+    supabase.auth.signOut().catch((error) => {
+      console.error('Supabase logout error (non-blocking):', error);
+    });
+    
+    // IMMEDIATE redirect to home page (don't wait for anything)
+    console.log('✅ Redirecting to home page...');
+    window.location.href = '/';
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {
