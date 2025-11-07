@@ -195,6 +195,12 @@ Your app requires these environment variables in Vercel. **You MUST add these in
    - **Environments**: ✅ Production, ✅ Preview, ✅ Development
    - Click **Save**
 
+   **Variable 5:**
+   - **Name**: `VITE_PRODUCTION_URL`
+   - **Value**: `https://logiclabberkom.vercel.app`
+   - **Environments**: ✅ Production, ✅ Preview, ✅ Development
+   - Click **Save**
+
 4. **After adding all variables**, you need to **redeploy** your project for the changes to take effect
 
 ## Post-Deployment

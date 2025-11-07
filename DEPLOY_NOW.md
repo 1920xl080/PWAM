@@ -16,8 +16,8 @@ VITE_GOOGLE_CLIENT_ID=550719306467-oo5ngn0o5udo3p0v6mo4obdnpq19djol.apps.googleu
 
 VITE_ALLOWED_EMAIL_DOMAIN=std.stei.itb.ac.id
 
-# Optional: Add production URL when deploying
-# VITE_PRODUCTION_URL=https://virtuallab-itb.vercel.app
+# Production URL for OAuth redirects
+VITE_PRODUCTION_URL=https://logiclabberkom.vercel.app
 ```
 
 ✅ This file is for local development only (won't be committed to git)
@@ -63,6 +63,7 @@ VITE_ALLOWED_EMAIL_DOMAIN=std.stei.itb.ac.id
      | `VITE_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWlteHd6bmR5eXZvcmFjanpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0MDIyNzQsImV4cCI6MjA3Nzk3ODI3NH0.u6Eo4o6KIoy50nnGRr1pDXFiSbQ1zxoXcmawbbRlFLs` | ✅ Prod, ✅ Preview, ✅ Dev |
      | `VITE_GOOGLE_CLIENT_ID` | `550719306467-oo5ngn0o5udo3p0v6mo4obdnpq19djol.apps.googleusercontent.com` | ✅ Prod, ✅ Preview, ✅ Dev |
      | `VITE_ALLOWED_EMAIL_DOMAIN` | `std.stei.itb.ac.id` | ✅ Prod, ✅ Preview, ✅ Dev |
+     | `VITE_PRODUCTION_URL` | `https://logiclabberkom.vercel.app` | ✅ Prod, ✅ Preview, ✅ Dev |
    
    - For each variable:
      1. Enter the **Key** (name)

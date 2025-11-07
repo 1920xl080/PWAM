@@ -51,6 +51,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes({ authContext }: { authContext: AuthContextType }) {
   const navigate = useNavigate();
 
+  // Handle OAuth redirect and URL cleanup
+  useEffect(() => {
+    // Check for OAuth tokens in hash
+    if (window.location.hash.includes('access_token')) {
+      // Clean up hash immediately (Supabase has already processed it)
+      const cleanUrl = window.location.pathname + window.location.search;
+      window.history.replaceState(null, '', cleanUrl);
+      
+      // Navigate to dashboard if we're on root and have a user
+      if (window.location.pathname === '/' && authContext.user) {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [authContext.user, navigate]);
+
   // Create logout function with navigation
   const logoutWithNavigate = async () => {
     await authContext.logout();
@@ -121,23 +136,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Check for existing Supabase session (this also processes OAuth hash tokens)
+    // Check for OAuth callback - Supabase automatically processes hash tokens
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasAccessToken = hashParams.get('access_token');
+    
+    // Check for existing Supabase session (this also processes OAuth hash tokens automatically)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         handleAuthUser(session.user);
       }
-      
-      // Clean up URL hash after session check (Supabase has processed tokens by now)
-      if (window.location.hash && session?.user) {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        if (hashParams.get('access_token')) {
-          // Clean up the hash from URL
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      }
     });
 
-    // Listen for auth state changes (fires when OAuth callback is processed)
+    // Listen for auth state changes (fires when OAuth tokens are processed)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -146,24 +156,27 @@ export default function App() {
       if (session?.user) {
         await handleAuthUser(session.user);
         
-        // Clean up URL hash after successful auth
-        if (window.location.hash) {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          if (hashParams.get('access_token')) {
-            // Remove hash from URL
+        // Clean up URL hash after successful authentication
+        // Use setTimeout to ensure Supabase has finished processing
+        if (hasAccessToken || window.location.hash.includes('access_token')) {
+          setTimeout(() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          }
-        }
-        
-        // Navigate to dashboard if we just completed OAuth login
-        if (event === 'SIGNED_IN' && window.location.pathname !== '/dashboard') {
-          window.location.href = '/dashboard';
+          }, 100);
         }
       } else {
         setUser(null);
         localStorage.removeItem('virtualLabUser');
       }
     });
+
+    // Also clean up hash after a short delay (fallback)
+    if (hasAccessToken) {
+      setTimeout(() => {
+        if (window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }, 500);
+    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -231,13 +244,16 @@ export default function App() {
 
   const loginWithGoogle = async (): Promise<boolean> => {
     try {
-      // Determine redirect URL based on environment
-      const redirectUrl = window.location.origin;
+      // Always redirect to production Vercel URL (not localhost)
+      const redirectUrl = import.meta.env.VITE_PRODUCTION_URL || 'https://logiclabberkom.vercel.app';
+      const redirectTo = `${redirectUrl}/dashboard`;
+      
+      console.log('OAuth redirect to:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${redirectUrl}/dashboard`,
+          redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
