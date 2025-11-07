@@ -1045,10 +1045,10 @@ export function HomePage({ authContext }: HomePageProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
               <p className="text-gray-600 text-sm mb-2">For general inquiries</p>
               <a 
-                href="mailto:virtuallab@itb.ac.id" 
+                href="mailto:itbvirtuallabofficial@gmail.com" 
                 className="text-blue-600 hover:text-blue-700 hover:underline"
               >
-                virtuallab@itb.ac.id
+                itbvirtuallabofficial@gmail.com
               </a>
             </motion.div>
 
