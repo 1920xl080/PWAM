@@ -308,7 +308,7 @@ export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
                   <CardContent>
                     <RadioGroup
                       key={attemptKey}
-                      value={answer?.selectedOptionId}
+                      value={answer?.selectedOptionId || ''}
                       onValueChange={(value) => handleAnswerChange(question.id, value)}
                       disabled={isSubmitted}
                       className="space-y-3"

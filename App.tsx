@@ -88,6 +88,8 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isLoggingOutRef = useRef(false);
+  const isHandlingAuthRef = useRef(false);
+  const handledUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Check if splash has been shown in this session
@@ -111,10 +113,17 @@ export default function App() {
       console.log('Auth state changed:', event, session?.user?.email || 'no user');
       
       if (session?.user) {
+        // Prevent duplicate handling for the same user (only skip if we're already handling this exact user)
+        if (handledUserIdRef.current === session.user.id && isHandlingAuthRef.current) {
+          console.log('⏭️ Skipping duplicate auth handling for user:', session.user.email);
+          return;
+        }
         console.log('✅ User authenticated:', session.user.email);
         await handleAuthUser(session.user);
       } else if (event === 'SIGNED_OUT') {
         console.log('✅ User signed out via Supabase');
+        handledUserIdRef.current = null;
+        isHandlingAuthRef.current = false;
         // Clear state (logout function handles the rest)
         setUser(null);
         localStorage.removeItem('virtualLabUser');
@@ -124,8 +133,13 @@ export default function App() {
     // Check for existing session (this also processes OAuth hash tokens automatically)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        console.log('✅ Existing session found:', session.user.email);
-        handleAuthUser(session.user);
+        // Only handle if not already handled
+        if (handledUserIdRef.current !== session.user.id) {
+          console.log('✅ Existing session found:', session.user.email);
+          handleAuthUser(session.user);
+        } else {
+          console.log('⏭️ Session already handled');
+        }
       } else {
         console.log('ℹ️ No existing session');
       }
@@ -145,14 +159,23 @@ export default function App() {
   }, []);
 
   const handleAuthUser = async (authUser: any) => {
+    // Prevent multiple simultaneous calls for the same user
+    if (isHandlingAuthRef.current && handledUserIdRef.current === authUser.id) {
+      console.log('⏭️ Auth handling already in progress for user:', authUser.id);
+      return;
+    }
+
+    isHandlingAuthRef.current = true;
     const email = authUser.email || '';
     
     // Check email domain restriction
     const allowedDomain = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN;
     if (allowedDomain && !email.endsWith(`@${allowedDomain}`)) {
+      isHandlingAuthRef.current = false;
       await supabase.auth.signOut();
       toast.error(`Only @${allowedDomain} emails are allowed`);
       setUser(null);
+      handledUserIdRef.current = null;
       return;
     }
 
@@ -217,6 +240,8 @@ export default function App() {
     // Always set user state (even if database operations failed)
     setUser(baseUserData);
     localStorage.setItem('virtualLabUser', JSON.stringify(baseUserData));
+    handledUserIdRef.current = authUser.id;
+    isHandlingAuthRef.current = false;
     
     console.log('User authenticated:', baseUserData.email);
     
@@ -308,27 +333,61 @@ export default function App() {
     }
 
     try {
-      // Save to Supabase database
+      // Use upsert instead of insert to handle duplicate submissions (409 error)
+      // This will update if the record exists, or insert if it doesn't
       const { error } = await supabase
         .from('user_challenge_submissions')
-        .insert({
+        .upsert({
           user_id: user.id,
           challenge_id: challengeId,
           score: score,
           total_points: totalPoints,
           submitted_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,challenge_id' // Update if user already submitted this challenge
         });
 
+      // Handle 409 conflict error gracefully (record already exists)
       if (error) {
-        console.error('Database error:', error);  // ✅ Log the error
-        throw error;
+        // If it's a 409 conflict, the record already exists - this is okay, just update local state
+        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('409')) {
+          console.log('Submission already exists, updating score...');
+          // Try to update the existing record
+          const { error: updateError } = await supabase
+            .from('user_challenge_submissions')
+            .update({
+              score: score,
+              total_points: totalPoints,
+              submitted_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id)
+            .eq('challenge_id', challengeId);
+          
+          if (updateError) {
+            console.error('Error updating submission:', updateError);
+            // Continue anyway - local state will be updated
+          }
+        } else {
+          console.error('Database error:', error);
+          throw error;
+        }
       }
 
-      // Update local state
-      const updatedCompletedChallenges = [
-        ...(user.completedChallenges || []),
-        { challengeId, score, date: new Date().toISOString() }
-      ];
+      // Update local state - check if challenge already exists to avoid duplicates
+      const existingIndex = user.completedChallenges?.findIndex(
+        c => c.challengeId === challengeId
+      ) ?? -1;
+      
+      const updatedCompletedChallenges = existingIndex >= 0
+        ? user.completedChallenges!.map((c, index) =>
+            index === existingIndex
+              ? { challengeId, score, date: new Date().toISOString() }
+              : c
+          )
+        : [
+            ...(user.completedChallenges || []),
+            { challengeId, score, date: new Date().toISOString() }
+          ];
 
       const updatedUser = {
         ...user,
