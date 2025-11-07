@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Navigation } from './Navigation';
 import { AuthContextType } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -23,8 +24,17 @@ const difficultyColors = {
 
 export function DashboardPage({ authContext }: DashboardPageProps) {
   const { user } = authContext;
+  const navigate = useNavigate();
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return null; // Will redirect via useEffect
+  }
 
   const totalChallenges = challenges.length;
   const completedChallenges = user.completedChallenges?.length || 0;
