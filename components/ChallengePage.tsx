@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { Navigation } from './Navigation';
 import { AuthContextType } from '../App';
 import { challenges } from '../data/mockData';
@@ -21,25 +20,10 @@ const difficultyColors = {
 
 export function ChallengePage({ authContext }: ChallengePageProps) {
   const navigate = useNavigate();
-  const { user } = authContext;
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth', { replace: true });
-    }
-  }, [user, navigate]);
 
   const handleStartChallenge = (challengeId: string) => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
     navigate(`/exercise/${challengeId}`);
   };
-
-  if (!user) {
-    return null; // Will redirect via useEffect
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -273,19 +273,22 @@ export default function App() {
     
     console.log('Starting logout process...');
     
-    // Clear user state and localStorage FIRST
+    // Clear user state and localStorage FIRST (before Supabase call)
+    // This ensures user is logged out locally even if Supabase call fails
     setUser(null);
     localStorage.removeItem('virtualLabUser');
     sessionStorage.removeItem('splashShown');
     
-    // Sign out from Supabase (fire and forget - don't wait)
+    // Sign out from Supabase (fire and forget - don't wait for it)
     supabase.auth.signOut().catch((error) => {
       console.error('Supabase logout error (non-blocking):', error);
     });
     
+    console.log('✅ Logout successful, redirecting to home page...');
+    
     // IMMEDIATE redirect to home page (don't wait for anything)
-    console.log('✅ Redirecting to home page...');
-    window.location.href = '/';
+    // Use window.location.replace to prevent back button issues
+    window.location.replace('/');
   };
 
   const saveCompletedChallenge = async (challengeId: string, score: number, totalPoints: number) => {

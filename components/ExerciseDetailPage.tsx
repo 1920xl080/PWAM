@@ -31,18 +31,7 @@ const difficultyColors = {
 export function ExerciseDetailPage({ authContext }: ExerciseDetailPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = authContext;
   const challenge = challenges.find(c => c.id === id);
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth', { replace: true });
-    }
-  }, [user, navigate]);
-
-  if (!user) {
-    return null; // Will redirect via useEffect
-  }
 
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
