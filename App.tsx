@@ -209,9 +209,12 @@ export default function App() {
       // Navigate to dashboard after successful authentication
       // Only redirect if on auth page (not home - user can visit home while logged in)
       const currentPath = window.location.pathname;
-      if (currentPath === '/auth') {
-        // Use window.location for immediate redirect
-        window.location.href = '/dashboard';
+      if (currentPath === '/auth' || currentPath === '/') {
+        // Use a small delay to ensure state is set, then redirect
+        // This prevents the white screen issue on dashboard
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 100);
       }
     } catch (error) {
       console.error('Error handling auth user:', error);

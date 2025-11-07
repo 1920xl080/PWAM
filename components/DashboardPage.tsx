@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Navigation } from './Navigation';
 import { AuthContextType } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,9 +7,10 @@ import { Progress } from './ui/progress';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { BookOpen, Trophy, Target, TrendingUp, CheckCircle2, ArrowRight } from 'lucide-react';
+import { BookOpen, Trophy, Target, TrendingUp, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { challenges } from '../data/mockData';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 type DashboardPageProps = {
   authContext: AuthContextType;
@@ -23,8 +24,82 @@ const difficultyColors = {
 
 export function DashboardPage({ authContext }: DashboardPageProps) {
   const { user } = authContext;
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
-  if (!user) return null;
+  // Check for user in localStorage as fallback and handle loading state
+  useEffect(() => {
+    // If user is available in context, we're done loading
+    if (user) {
+      setIsLoading(false);
+      setHasCheckedAuth(true);
+      return;
+    }
+
+    // Check localStorage as fallback (handles race condition during login)
+    const savedUser = localStorage.getItem('virtualLabUser');
+    if (savedUser) {
+      try {
+        // If we have a saved user but no context user yet, wait a bit
+        // This handles the race condition during login
+        const timer = setTimeout(() => {
+          if (authContext.user) {
+            setIsLoading(false);
+            setHasCheckedAuth(true);
+          } else {
+            // Still no user in context after delay, might be invalid session
+            setIsLoading(false);
+            setHasCheckedAuth(true);
+            navigate('/auth', { replace: true });
+          }
+        }, 800);
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        setIsLoading(false);
+        setHasCheckedAuth(true);
+        navigate('/auth', { replace: true });
+      }
+    } else {
+      // No saved user, wait a bit for auth context to potentially update
+      // (handles case where user just logged in and context is updating)
+      const timer = setTimeout(() => {
+        if (!authContext.user) {
+          setIsLoading(false);
+          setHasCheckedAuth(true);
+          navigate('/auth', { replace: true });
+        } else {
+          setIsLoading(false);
+          setHasCheckedAuth(true);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, navigate, authContext]);
+
+  // Show loading state while checking authentication
+  if (isLoading || !hasCheckedAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="inline-block"
+          >
+            <Loader2 className="w-8 h-8 text-blue-600" />
+          </motion.div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user after loading check, show nothing (redirect will happen)
+  if (!user) {
+    return null;
+  }
 
   const totalChallenges = challenges.length;
   const completedChallenges = user.completedChallenges?.length || 0;
