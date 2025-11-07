@@ -22,7 +22,7 @@
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
+  --input: rgba(0, 0, 0, 0.1);
   --input-background: #f3f3f5;
   --switch-background: #cbced4;
   --font-weight-medium: 500;
@@ -282,5 +282,21 @@ html, body {
   
   button[data-slot="button"]:hover.bg-gray-100 {
     background-color: var(--color-gray-100) !important;
+  }
+  
+  /* Ensure input and textarea components have visible borders */
+  input[data-slot="input"],
+  textarea[data-slot="textarea"] {
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: var(--input) !important;
+    border-radius: calc(var(--radius) - 2px) !important;
+    background-color: var(--input-background) !important;
+  }
+  
+  input[data-slot="input"]:focus-visible,
+  textarea[data-slot="textarea"]:focus-visible {
+    border-color: var(--ring) !important;
+    outline: none !important;
   }
 }
