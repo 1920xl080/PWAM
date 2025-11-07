@@ -121,19 +121,44 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Check for existing Supabase session
+    // Check for existing Supabase session (this also processes OAuth hash tokens)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         handleAuthUser(session.user);
       }
+      
+      // Clean up URL hash after session check (Supabase has processed tokens by now)
+      if (window.location.hash && session?.user) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        if (hashParams.get('access_token')) {
+          // Clean up the hash from URL
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes (fires when OAuth callback is processed)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
       if (session?.user) {
-        handleAuthUser(session.user);
+        await handleAuthUser(session.user);
+        
+        // Clean up URL hash after successful auth
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          if (hashParams.get('access_token')) {
+            // Remove hash from URL
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }
+        
+        // Navigate to dashboard if we just completed OAuth login
+        if (event === 'SIGNED_IN' && window.location.pathname !== '/dashboard') {
+          window.location.href = '/dashboard';
+        }
       } else {
         setUser(null);
         localStorage.removeItem('virtualLabUser');
