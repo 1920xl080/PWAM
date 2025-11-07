@@ -1,9 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Trophy, LayoutDashboard, LogOut, Menu, X, Home } from 'lucide-react';
+import { GraduationCap, Trophy, LayoutDashboard, LogOut, Home } from 'lucide-react';
 import { Button } from './ui/button';
 import { AuthContextType } from '../App';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 type NavigationProps = {
   authContext: AuthContextType;
@@ -12,7 +11,6 @@ type NavigationProps = {
 export function Navigation({ authContext }: NavigationProps) {
   const location = useLocation();
   const { user, logout } = authContext;
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -28,9 +26,9 @@ export function Navigation({ authContext }: NavigationProps) {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 flex-wrap gap-2">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <motion.div 
               className="bg-blue-600 p-2 rounded-lg"
               whileHover={{ scale: 1.05, rotate: 5 }}
@@ -44,15 +42,15 @@ export function Navigation({ authContext }: NavigationProps) {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Navigation - Same on all screen sizes */}
+          <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
             {navLinks.map((link) => {
               const Icon = link.icon;
               return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg transition-colors text-sm sm:text-base ${
                     isActive(link.path)
                       ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-600 hover:bg-gray-50'
@@ -65,11 +63,11 @@ export function Navigation({ authContext }: NavigationProps) {
             })}
           </div>
 
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Auth Buttons - Same on all screen sizes */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {user ? (
               <>
-                <span className="text-sm text-gray-600">Hello, {user.name}</span>
+                <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">Hello, {user.name}</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -93,79 +91,7 @@ export function Navigation({ authContext }: NavigationProps) {
               </Link>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-600" />
-            ) : (
-              <Menu className="w-6 h-6 text-gray-600" />
-            )}
-          </button>
         </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div 
-              className="md:hidden py-4 border-t border-gray-200"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex flex-col gap-2">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      isActive(link.path)
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-              {user ? (
-                <button
-                  disabled={authContext.isLoggingOut}
-                  onClick={async () => {
-                    if (authContext.isLoggingOut) return;
-                    try {
-                      setMobileMenuOpen(false);
-                      await logout();
-                    } catch (error) {
-                      console.error('Logout error:', error);
-                    }
-                  }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <LogOut className="w-4 h-4" />
-                  {authContext.isLoggingOut ? 'Logging out...' : 'Logout'}
-                </button>
-              ) : (
-                <Link
-                  to="/auth"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg text-center"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </nav>
   );
